@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Maps</title>
+
+    <meta name = "viewport" content = "initial-scale = 1.0, user-scalable = no">
+
+    <meta charset = "utf-8">
+
+    <style type="text/css">
+    html, body, #map-canvas, #panels{
+      height: 100%;
+      margin: 0px;
+      padding: 0px
+    }
+    </style>
+    <style>
+      #panel{
+        position: relative;
+        height: 100%;
+        float: right;
+        width: 380px;
+      }
+
+      #weather-panel{
+        height: 40%;
+      }
+
+      #directions-panel{
+        height: 60%;
+      }
+
+      #map-canvas {
+        margin-right: 400px;
+      }
+
+      #control {
+        background: #fff;
+        padding: 5px;
+        font-size: 14px;
+        font-family: Arial;
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 2px rgba(33, 33, 33, 0.4);
+        display: none;
+      }
+
+      @media print {
+        #map-canvas {
+          height: 500px;
+          margin: 0;
+        }
+
+        #directions-panel {
+          float: none;
+          width: auto;
+        }
+      }
+    </style>
+
+    <script src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyBVAKDYSs526Hq74_WtCc6XswQjrH5hpyQ">
+    </script>
+
+    <script>
+      var geocoder;
+      var marker;
+      var directionsDisplay;
+      var directionsService = new google.maps.DirectionsService();
+      var map;
+      var control;
+
+      function initialize(){
+        geocoder = new google.maps.Geocoder();
+        directionsDisplay = new google.maps.DirectionsRenderer();
+
+        var myLatLng = new google.maps.LatLng(34.093699, -118.122225)
+
+        var mapOptions = {
+          zoom: 10,
+          minZoom: 0,
+          center: myLatLng,
+          mapTypeId: google.maps.MapTypeId.MAP
+        }
+
+        map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+        var trafficLayer = new google.maps.TrafficLayer();
+        trafficLayer.setMap(map);
+        directionsDisplay.setMap(map);
+        directionsDisplay.setPanel(document.getElementById('directions-panel'));
+
+        control = document.getElementById('control');
+        control.style.display = 'block';
+        map.controls[google.maps.ControlPosition.TOP_CENTER].push(control);
+
+      }
+
+      function codeAddress(){
+        var address = document.getElementById('address').value;
+        geocoder.geocode({'address' : address}, function(results, status){
+          if(status == google.maps.GeocoderStatus.OK){
+            map.setCenter(results[0].geometry.location);
+            marker = new google.maps.Marker({
+              map: map,
+              position: results[0].geometry.location
+            });
+          } else{
+              alert('Geocode was not successful for the following reason: ' + status);
+          }
+        });
+      }
+
+      function calcRoute(){
+        var start = document.getElementById('start').value;
+        var end = document.getElementById('end').value;
+        var request = {
+          origin: start,
+          destination: end,
+          travelMode: google.maps.TravelMode.DRIVING
+        };
+        directionsService.route(request, function(response, status){
+          if(status == google.maps.DirectionsStatus.OK){
+            directionsDisplay.setDirections(response);
+          }
+        });
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+
+  </head>
+  
+  <body onload = "calcRoute()">
+    <div id="control">
+    <b>Location: </b>
+    <input id = "address" type = "textbox" value = "">
+    <input type = "submit" value = "Submit" onclick = "codeAddress()">
+    <b>Start: </b>
+    <input id="start" type = "textbox" value = "{{ start }}" >
+
+    <b>End: </b>
+    <input id="end" type = "textbox" value = "{{ end }}">
+
+    <input type = "button" value = "Calculate" onclick = "calcRoute()";>
+
+    </div>
+
+    <div id = "panel">
+      <div id = "weather-panel">
+        <h1>{{ city }}, {{ state }}</h1>
+        <h2>{{ day }}, {{ time }}</h2>
+        <h3>Status: {{ status }}</h3>
+        <h4>{{ temperature }} &deg;F</h4>
+        <table border = "1">
+        <tr>
+          <th> Start </th>
+          {% for time in start_time %}
+            <td>{{ time }}</td>
+          {% endfor %}          
+        </tr>
+        <tr>
+          <th> End </th>
+          {% for time in end_time %}
+            <td>{{ time }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <th> Event </th>
+          {% for event in calendar %}
+          <td>{{ event }}</td>
+          {% endfor %}
+        </tr>
+        </table>
+      
+        
+      </div>
+      <div id = "directions-panel"></div>
+    </div>
+
+    <div id = "map-canvas"></div>
+  </body>
+</html>
